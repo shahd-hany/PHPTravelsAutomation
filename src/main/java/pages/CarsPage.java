@@ -1,9 +1,7 @@
 package pages;
 
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.FindBy;
-
 
 public class CarsPage extends PageBase {
 
@@ -11,9 +9,19 @@ public class CarsPage extends PageBase {
         super(driver);
     }
 
-    @FindBy(id = "select2-car_from-container")
-    public WebElement pickupLocation;
+    By pickupLocation = By.id("select2-car_from-container");
+    By searchBtn = By.xpath("//button[@type='submit']");
+    By pickUpDate = By.id("datefrom");
 
-    @FindBy(xpath = "//button[@type='submit']")
-    public WebElement searchBtn;
+    public void selectPickupLocation(String locationName) {
+        click(pickupLocation);
+        sendKeys(pickupLocation, locationName);
+    }
+
+    public void selectDate(String date) {
+        sendKeys(pickUpDate, date);
+    }
+    public void clickSearch() {
+        click(searchBtn);
+    }
 }
