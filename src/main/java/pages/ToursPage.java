@@ -31,41 +31,23 @@ public class ToursPage extends PageBase {
     private final By nameInput         = By.cssSelector("input[x-model='filters.nameSearch']");
     private final By ratingToggle      = By.xpath("//button[contains(.,'Star Rating') or .//*[contains(.,'Star Rating')]]");
     private final By sortSelect        = By.cssSelector("select[x-model='sortBy']");
+    By sectionBtn = By.xpath("//button[.//span[normalize-space(text())='Inclusions']]");
 
     // ===== Details =====
     private final By moreDetailsButtons = By.xpath("//a[.//span[text()='More Details']]");
+//   count individuals
     private final By detailsAdultsSelect   = By.cssSelector("select[x-ref='adultSelect']");
     private final By detailsChildrenSelect = By.cssSelector("select[x-ref='childSelect']");
     private final By detailsLoading        = By.xpath("//span[contains(.,'Loading price...') or contains(.,'Processing...')]");
     private final By priceH3               = By.xpath("//h3[.//span[@x-text='tourData.currency']]");
-    private final By insuranceCb           = By.xpath("//label[contains(.,'Insurance')]/preceding-sibling::input[@type='checkbox'] | //input[@type='checkbox'][contains(translate(@value,'INSURANCE','insurance'),'insurance')]");
-    private final By guideCb               = By.xpath("//label[contains(.,'Guide')]/preceding-sibling::input[@type='checkbox'] | //input[@type='checkbox'][contains(translate(@value,'GUIDE','guide'),'guide')]");
     private final By adultPrice = By.xpath("(//div[contains(@x-show,'display_price_per_adult')]//div[@x-html])[1]");
     private final By childPrice = By.xpath("(//div[contains(@x-show,'display_price_per_child')]//div[@x-html])[1]");
     public ToursPage(WebDriver driver) { super(driver); }
-    public boolean isNoToursMessageVisible() {
-        try {
-            return wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(noToursMessage)
-            ).isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-    public String getAlertMessage() {
-        try {
-            return wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(alertMessage)
-            ).getText().trim();
-        } catch (Exception e) {
-            return "";
-        }
-    }
     // SEARCH
     public void openToursSection() {
         navigateTo("https://phptravels.net/tours");
         wait.until(ExpectedConditions.urlContains("/tours"));
-        waitForResultsToLoad();
+        waitForToLoad();
         System.out.println("Tours page opened");
     }
     public void searchTourByDestination(String destination) {
@@ -91,6 +73,24 @@ public class ToursPage extends PageBase {
             System.out.println("Destination selection failed: " + e.getMessage());
         }
     }
+    public boolean isNoToursMessageVisible() {
+        try {
+            return wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(noToursMessage)
+            ).isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    public String getAlertMessage() {
+        try {
+            return wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(alertMessage)
+            ).getText().trim();
+        } catch (Exception e) {
+            return "";
+        }
+    }
     public void selectDuration(String value) {
         driver.findElement(durationTrigger).click();
         for (WebElement opt : findElements(durationOptions)) {
@@ -113,9 +113,8 @@ public class ToursPage extends PageBase {
     public void setTravelers(int adults, int children) {
         WebElement trigger = wait.until(ExpectedConditions.presenceOfElementLocated(travelersTrigger));
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", trigger);
-        wait.until(ExpectedConditions.elementToBeClickable(travelersTrigger)).click();
+        wait.until(ExpectedConditions.elementToBeClickable(trigger)).click();
         wait.until(ExpectedConditions.visibilityOfElementLocated(adultsSpan));
-        // Adults يبدأ بـ 1 ، Children يبدأ بـ 0
         for (int i = 0; i < adults - 1;   i++) {click(adultsIncr);}
         for (int i = 0; i < children; i++) {click(childrenIncr);}
         driver.findElement(By.tagName("body")).click();
@@ -127,6 +126,7 @@ public class ToursPage extends PageBase {
         wait.until(ExpectedConditions.elementToBeClickable(startDateInput)).click();
         String day = String.valueOf(Integer.parseInt(date.split("-")[0]));
         wait.until(ExpectedConditions.elementToBeClickable(getDayLocator(day))).click();
+        // عشان اتاكد انها اتقفلت
         wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("div.datepicker")));
     }
     public void clickSearchTours() {
@@ -136,7 +136,7 @@ public class ToursPage extends PageBase {
     }
     // RESULTS
     public List<WebElement> getAllTours() {
-        waitForResultsToLoad();
+        waitForToLoad();
         List<WebElement> result = new ArrayList<>();
         for (WebElement card : driver.findElements(tourCards)) {
             try { if (card.isDisplayed()) result.add(card); }
@@ -148,7 +148,6 @@ public class ToursPage extends PageBase {
     public void printAllTours() {
         List<WebElement> titles = driver.findElements(tourTitles);
         List<WebElement> prices = driver.findElements(tourPrices);
-        System.out.println("\n=== Tours ===");
         for (int i = 0; i < titles.size(); i++) {
             try {
                 System.out.printf("[%d] %s | %s%n", i + 1,
@@ -156,10 +155,9 @@ public class ToursPage extends PageBase {
                         i < prices.size() ? prices.get(i).getText().trim() : "N/A");
             } catch (StaleElementReferenceException ignored) {}
         }
-        System.out.println("=============\n");
     }
     public boolean openFirstTourByMoreDetails() {
-        waitForResultsToLoad();
+        waitForToLoad();
         try {
             List<WebElement> buttons =
                     wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(moreDetailsButtons));
@@ -180,65 +178,54 @@ public class ToursPage extends PageBase {
             wait.until(ExpectedConditions.urlContains("/tour/"));
             System.out.println("Tour details opened: " + driver.getCurrentUrl());
             return true;
-
         } catch (Exception e) {
-
             System.out.println("Failed to open tour details: " + e.getMessage());
-
             return false;
         }
     }
 
     // FILTERS
-    public void sortByPriceHighToLow() { selectByVisibleText(sortSelect, "Price: high To low");}
+    public void sortByPriceHighToLow() {
+        selectByVisibleText(sortSelect, "Price: high To low");}
     public void filterByName(String keyword) {
         WebElement input = wait.until(ExpectedConditions.visibilityOfElementLocated(nameInput));
         input.clear();
         input.sendKeys(keyword);
-        waitForFilterRefresh();
-        System.out.println("Name filter: '" + keyword + "' → " + getFilteredCount());
+        waitForToLoad();
+        System.out.println("Name filter: '" + keyword );
     }
     public void filterByRating(int stars) {
         try { wait.until(ExpectedConditions.elementToBeClickable(ratingToggle)).click(); }
         catch (Exception ignored) {}
-
-        By cbLocator = By.cssSelector("input#rating-" + stars);
-        By lbLocator = By.cssSelector("label[for='rating-" + stars + "']");
+        By input = By.cssSelector("input#rating-" + stars);
+        By label = By.cssSelector("label[for='rating-" + stars + "']");
         WebElement target;
-        try { target = wait.until(ExpectedConditions.elementToBeClickable(lbLocator)); }
-        catch (Exception e) { target = wait.until(ExpectedConditions.presenceOfElementLocated(cbLocator)); }
-
+        try { target = wait.until(ExpectedConditions.elementToBeClickable(label)); }
+        catch (Exception e) { target = wait.until(ExpectedConditions.presenceOfElementLocated(input)); }
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", target);
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", target);
 
         try {
-            WebElement cb = driver.findElement(cbLocator);
+            WebElement cb = driver.findElement(input);
             if (!cb.isSelected()) ((JavascriptExecutor) driver).executeScript("arguments[0].click();", cb);
         } catch (Exception ignored) {}
 
-        waitForFilterRefresh();
-        System.out.println("Rating: " + stars + "★ → " + getFilteredCount());
+        waitForToLoad();
+        System.out.println("Rating: " + stars );
     }
     public void filterByInclusion(String inclusionValue) {
-        By sectionBtn = By.xpath("//button[.//span[normalize-space(text())='Inclusions']]");
         try {
             WebElement btn = wait.until(ExpectedConditions.elementToBeClickable(sectionBtn));
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", btn);
             if (!btn.findElement(By.cssSelector("span.material-symbols-outlined")).getAttribute("class").contains("rotate-180"))
                 btn.click();
-        } catch (Exception e) { System.out.println("Inclusions toggle failed: " + e.getMessage()); }
+        } catch (Exception e) { System.out.println("Inclusions toggle failed: "); }
+//        input
         WebElement checkbox = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("inclusion-" + inclusionValue)));
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", checkbox);
         if (!checkbox.isSelected()) ((JavascriptExecutor) driver).executeScript("arguments[0].click();", checkbox);
-        waitForFilterRefresh();
-        System.out.println("Inclusion '" + inclusionValue + "' → " + getFilteredCount() + " results");
-    }
-    public boolean isInclusionSelected(String inclusionValue) {
-        try {
-            Object checked = ((JavascriptExecutor) driver).executeScript("return arguments[0].checked;",
-                    driver.findElement(By.id("inclusion-" + inclusionValue)));
-            return Boolean.TRUE.equals(checked);
-        } catch (Exception e) { return false; }
+        waitForToLoad();
+        System.out.println("Inclusion '" + inclusionValue );
     }
     public int getFilteredCount() {
         int count = 0;
@@ -261,12 +248,12 @@ public class ToursPage extends PageBase {
         } catch (Exception e) { System.out.println(label + " price not found"); return 0.0; }
     }
 
-    // Travelers (Details Page)
+    // Travelers (Details Page) هختار عدد الاشخاص
     public void selectAdults(int count)   { selectTraveler(detailsAdultsSelect,   count, "Adults"); }
     public void selectChildren(int count) { selectTraveler(detailsChildrenSelect, count, "Children"); }
     private void selectTraveler(By sel, int count, String label) {
         try {
-            WebDriverWait sw = new WebDriverWait(driver, Duration.ofSeconds(10));
+            WebDriverWait sw = new WebDriverWait(driver, Duration.ofSeconds(5));
             sw.until(ExpectedConditions.elementToBeClickable(sel));
             if (!String.valueOf(count).equals(driver.findElement(sel).getAttribute("value")))
                 selectByValue(sel, String.valueOf(count));
@@ -277,29 +264,18 @@ public class ToursPage extends PageBase {
 
     // Total Price & Extra Services
     public double getCurrentTotalPrice() {
-        try { new WebDriverWait(driver, Duration.ofSeconds(8)).until(ExpectedConditions.invisibilityOfElementLocated(detailsLoading)); } catch (Exception ignored) {}
-        try { double p = parsePrice(driver.findElement(priceH3).getText()); if (p > 0) { System.out.println("Total: " + p); return p; } } catch (Exception ignored) {}
+        try { new WebDriverWait(driver, Duration.ofSeconds(3)).until(ExpectedConditions.invisibilityOfElementLocated(detailsLoading)); } catch (Exception ignored) {}
+        try { double p = parsePrice(driver.findElement(priceH3).getText());
+        if (p > 0) { System.out.println("Total: " + p); return p; } } catch (Exception ignored) {}
         return 0.0;
     }
-    public void scrollToAdditionalOptions() { try { scrollToElement(insuranceCb); } catch (Exception e) { scrollDown(500); } }
-    public void addInsurance() { try { selectCheckbox(insuranceCb); System.out.println("Insurance added"); } catch (Exception e) { System.out.println("Insurance not found"); } }
-    public void addGuide()     { try { selectCheckbox(guideCb);     System.out.println("Guide added");     } catch (Exception e) { System.out.println("Guide not found");     } }
-
     // HELPERS
-    public void waitForResultsToLoad() {
+    public void waitForToLoad() {
         try { wait.until(ExpectedConditions.invisibilityOfElementLocated(loadingIndicator)); }
         catch (Exception ignored) {}
         try { wait.until(ExpectedConditions.presenceOfElementLocated(tourCards));
         }
         catch (Exception e) { System.out.println("No tour cards found"); }
-    }
-    public void waitForFilterRefresh() {
-        try { wait.until(
-                ExpectedConditions.invisibilityOfElementLocated(loadingIndicator)); }
-        catch (Exception ignored) {}
-        try { wait.until(
-                ExpectedConditions.visibilityOfElementLocated(tourCards)); }
-        catch (Exception ignored) {}
     }
     private void waitForDetailsPage() {
         WebDriverWait sw = new WebDriverWait(driver, Duration.ofSeconds(15));
@@ -309,6 +285,7 @@ public class ToursPage extends PageBase {
     }
     private double parsePrice(String text) {
         try {
+//            اي حاجه مش رقم همسحها
             String n = text.replaceAll("[^0-9.]", "");
             return n.isEmpty() ? 0.0 : Double.parseDouble(n);
         } catch (Exception e) {
