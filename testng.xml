@@ -9,4 +9,5 @@
             <class name="tests.HotelSearchTest"/>
         </classes>
     </test>
+
 </suite>
