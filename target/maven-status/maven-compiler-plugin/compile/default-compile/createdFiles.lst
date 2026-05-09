@@ -1,0 +1,5 @@
+pages\PageBase.class
+pages\BookingPage.class
+pages\HotelPage.class
+pages\LoginPage.class
+pages\HotelRoomPage.class
