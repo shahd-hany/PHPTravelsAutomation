@@ -13,6 +13,10 @@ public class TestBase {
 
     protected WebDriver driver;
 
+    public WebDriver getDriver() {
+        return driver;
+    }
+
     @BeforeMethod
     public void setUp() {
         WebDriverManager.chromedriver().setup();
