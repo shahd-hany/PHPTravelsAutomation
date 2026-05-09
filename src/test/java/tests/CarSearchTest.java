@@ -34,4 +34,4 @@ public class CarSearchTest extends TestBase {
                 "Expected redirect after choosing first car, but URL did not change.");
     }
 }
-//tests1
+//tests2
