@@ -1,5 +1,4 @@
 package tests;
-
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import pages.CarPage;
@@ -27,7 +26,12 @@ public class CarSearchTest extends TestBase {
         Assert.assertTrue(carPage.getBookButtonsCount() > 0,
                 "No car results with Book Now button were found.");
 
+//        carPage.chooseFirstCar();
         carPage.chooseFirstCar();
+        carPage.waitForBookingForm(); // بدل waitForBookingRedirect
+
+        Assert.assertTrue(carPage.isBookingFormVisible(),
+                "Expected booking form or new page after choosing first car.");
 
         String afterBookingClickUrl = carPage.getCurrentPageUrl();
         Assert.assertNotEquals(afterBookingClickUrl, resultsUrl,

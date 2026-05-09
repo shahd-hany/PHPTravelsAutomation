@@ -24,7 +24,41 @@ public class CarPage extends PageBase {
     public CarPage(WebDriver driver) {
         super(driver);
     }
+// CarPage.java
 
+    private final By bookingModal = By.xpath(
+            "//*[contains(@class,'modal') and contains(@class,'show')] | " +
+                    "//*[contains(@class,'booking-form')] | " +
+                    "//form[contains(@action,'booking') or contains(@action,'checkout')]"
+    );
+
+    private final By bookingFormIndicator = By.xpath(
+            "//*[contains(normalize-space(),'Personal Details') or " +
+                    "contains(normalize-space(),'Payment') or " +
+                    "contains(normalize-space(),'Checkout') or " +
+                    "contains(normalize-space(),'Complete Booking')]"
+    );
+
+    public void waitForBookingForm() {
+        shortPause(2000); // استنى الـ modal يفتح
+        // ممكن URL يتغير أو modal يظهر
+        wait.until(driver -> {
+            boolean urlChanged = !driver.getCurrentUrl().contains("/cars/rental/");
+            boolean modalVisible = !driver.findElements(bookingModal).isEmpty() ||
+                    !driver.findElements(bookingFormIndicator).isEmpty();
+            return urlChanged || modalVisible;
+        });
+    }
+
+    public boolean isBookingFormVisible() {
+        String currentUrl = driver.getCurrentUrl();
+        // إما URL اتغير
+        if (!currentUrl.contains("/cars/rental/")) {
+            return true;
+        }
+        // أو modal/form ظهر على نفس الصفحة
+        return isDisplayed(bookingModal) || isDisplayed(bookingFormIndicator);
+    }
     public void openHomePage() {
         navigateTo(HOME_URL);
         waitForPageReady();
